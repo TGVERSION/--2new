@@ -32,6 +32,22 @@ class UserRepository:
         )
         return result.scalar_one_or_none()
 
+    async def get_by_email(self, session: AsyncSession, email: str) -> Optional[User]:
+        """
+        Получить пользователя по email
+        
+        Args:
+            session: Асинхронная сессия SQLAlchemy
+            email: Email пользователя
+            
+        Returns:
+            User или None, если пользователь не найден
+        """
+        result = await session.execute(
+            select(User).where(User.email == email)
+        )
+        return result.scalar_one_or_none()
+
     async def get_by_filter(
         self, 
         session: AsyncSession, 
@@ -78,17 +94,22 @@ class UserRepository:
         result = await session.execute(query)
         return list(result.scalars().all())
 
-    async def create(self, session: AsyncSession, user_data: UserCreate) -> User:
+    async def create(self, session: AsyncSession, user_data: UserCreate = None, **kwargs) -> User:
         """
         Создать нового пользователя
         
         Args:
             session: Асинхронная сессия SQLAlchemy
-            user_data: Данные для создания пользователя
+            user_data: Данные для создания пользователя (опционально)
+            **kwargs: Данные для создания пользователя (если user_data не передан)
             
         Returns:
             Созданный пользователь
         """
+        if user_data is None:
+            # Если передан kwargs, создаем UserCreate из kwargs
+            user_data = UserCreate(**kwargs)
+        
         user = User(
             username=user_data.username,
             email=user_data.email,
@@ -103,7 +124,8 @@ class UserRepository:
         self, 
         session: AsyncSession, 
         user_id: str, 
-        user_data: UserUpdate
+        user_data: UserUpdate = None,
+        **kwargs
     ) -> Optional[User]:
         """
         Обновить пользователя
@@ -111,7 +133,8 @@ class UserRepository:
         Args:
             session: Асинхронная сессия SQLAlchemy
             user_id: ID пользователя (UUID в виде строки)
-            user_data: Данные для обновления пользователя
+            user_data: Данные для обновления пользователя (опционально)
+            **kwargs: Данные для обновления пользователя (если user_data не передан)
             
         Returns:
             Обновленный пользователь или None, если пользователь не найден
@@ -120,6 +143,10 @@ class UserRepository:
         user = await self.get_by_id(session, user_id)
         if not user:
             return None
+        
+        # Если передан kwargs, создаем UserUpdate из kwargs
+        if user_data is None:
+            user_data = UserUpdate(**kwargs)
         
         # Обновляем только переданные поля
         update_data = user_data.model_dump(exclude_unset=True)

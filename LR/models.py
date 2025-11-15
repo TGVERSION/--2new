@@ -1,6 +1,6 @@
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, mapped_column, relationship, declarative_base
 from sqlalchemy import ForeignKey, String, Boolean, DateTime, Text, Integer, Float
+from typing import Optional
 import uuid
 from datetime import datetime
 
@@ -57,9 +57,9 @@ class Address(Base):
     # Город
     city: Mapped[str] = mapped_column(String(50), nullable=False)
     # Штат/область
-    state: Mapped[str] = mapped_column(String(50))
+    state: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
     # Почтовый индекс
-    zip_code: Mapped[str] = mapped_column(String(20))
+    zip_code: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
     # Страна
     country: Mapped[str] = mapped_column(String(50), nullable=False)
     # Флаг основного адреса
@@ -93,6 +93,8 @@ class Product(Base):
     description: Mapped[str] = mapped_column(Text, nullable=True)
     # Цена продукта
     price: Mapped[float] = mapped_column(Float, nullable=False)
+    # Количество продукции на складе
+    stock_quantity: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     # Дата создания записи
     created_at: Mapped[datetime] = mapped_column(
         DateTime, default=datetime.now)
