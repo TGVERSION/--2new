@@ -44,3 +44,35 @@ python -m app.main
   - Пример: `DELETE /users/42038a64-e04f-4ef6-8442-4d00afc969b5`
 
 Запрос к корневому пути `/` вернет 404, так как все роуты находятся под `/users`.
+
+## Запуск тестов
+
+Для запуска тестов используйте одну из следующих команд:
+
+### Все тесты
+```bash
+python -m pytest
+```
+
+### Только unit-тесты
+```bash
+python -m pytest tests/test_models/ tests/test_repositories/ tests/test_services/
+```
+
+### Только API тесты
+```bash
+python -m pytest tests/test_routes/
+```
+
+### С покрытием кода
+```bash
+python -m pytest --cov=app --cov-report=html
+```
+
+### Параллельный запуск
+```bash
+python -m pip install --force-reinstall pytest-xdist
+python -m pytest -n auto
+```
+
+**Примечание:** На Windows можно использовать `pytest.bat` вместо `python -m pytest`, если файл находится в текущей директории или добавлен в PATH.

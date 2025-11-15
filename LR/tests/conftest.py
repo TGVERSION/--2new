@@ -3,6 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 import sys
 from pathlib import Path
+import os
 
 # Добавляем путь к корневой папке проекта для импорта моделей
 project_root = Path(__file__).parent.parent
@@ -10,8 +11,14 @@ sys.path.insert(0, str(project_root))
 
 from models import Base
 
-# Тестовая база данных
-TEST_DATABASE_URL = "sqlite+aiosqlite:///./test.db"
+# Тестовая база данных - используем in-memory для параллельных тестов
+# или уникальный файл для каждого worker процесса
+worker_id = os.environ.get("PYTEST_XDIST_WORKER", "main")
+if worker_id == "main":
+    TEST_DATABASE_URL = "sqlite+aiosqlite:///./test.db"
+else:
+    # Для параллельных тестов используем in-memory БД или уникальные файлы
+    TEST_DATABASE_URL = f"sqlite+aiosqlite:///:memory:"
 
 
 @pytest.fixture(scope="session")
@@ -24,11 +31,19 @@ def engine():
 async def tables(engine):
     """Создает и удаляет таблицы для тестов"""
     async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.drop_all)
+        # Игнорируем ошибки при удалении (таблицы могут не существовать)
+        try:
+            await conn.run_sync(Base.metadata.drop_all)
+        except Exception:
+            pass
         await conn.run_sync(Base.metadata.create_all)
     yield
     async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.drop_all)
+        # Игнорируем ошибки при удалении
+        try:
+            await conn.run_sync(Base.metadata.drop_all)
+        except Exception:
+            pass
 
 
 @pytest.fixture
@@ -40,12 +55,15 @@ async def session(engine, tables):
     async with async_session() as session:
         # Очищаем данные перед каждым тестом
         from sqlalchemy import text
-        await session.execute(text("DELETE FROM order_items"))
-        await session.execute(text("DELETE FROM orders"))
-        await session.execute(text("DELETE FROM addresses"))
-        await session.execute(text("DELETE FROM products"))
-        await session.execute(text("DELETE FROM users"))
-        await session.commit()
+        try:
+            await session.execute(text("DELETE FROM order_items"))
+            await session.execute(text("DELETE FROM orders"))
+            await session.execute(text("DELETE FROM addresses"))
+            await session.execute(text("DELETE FROM products"))
+            await session.execute(text("DELETE FROM users"))
+            await session.commit()
+        except Exception:
+            await session.rollback()
         
         yield session
         
