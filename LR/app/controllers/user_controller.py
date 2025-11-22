@@ -1,24 +1,24 @@
-from litestar import Controller, get, post, put, delete
-from litestar.params import Parameter
-from litestar.exceptions import NotFoundException
-from typing import List, Optional
-from sqlalchemy.ext.asyncio import AsyncSession
-
 import sys
 from pathlib import Path
+from typing import List, Optional
+
+from litestar import Controller, delete, get, post, put
+from litestar.exceptions import NotFoundException
+from litestar.params import Parameter
+from sqlalchemy.ext.asyncio import AsyncSession
 
 # Добавляем путь к корневой папке проекта для импорта
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
+from app.schemas.user import UserCreate, UserResponse, UserUpdate
 from app.services.user_service import UserService
-from app.schemas.user import UserCreate, UserUpdate, UserResponse
 from models import User
 
 
 class UserController(Controller):
     """Контроллер для управления пользователями"""
-    
+
     path = "/users"
     tags = ["users"]
 
@@ -31,15 +31,15 @@ class UserController(Controller):
     ) -> UserResponse:
         """
         Получить пользователя по ID
-        
+
         Args:
             user_id: ID пользователя (UUID в формате строки)
             db_session: Сессия базы данных (dependency injection)
             user_service: Сервис для работы с пользователями (dependency injection)
-            
+
         Returns:
             Данные пользователя
-            
+
         Raises:
             NotFoundException: Если пользователь не найден
         """
@@ -61,11 +61,11 @@ class UserController(Controller):
     ) -> List[UserResponse]:
         """
         Получить список всех пользователей
-        
+
         Args:
             db_session: Сессия базы данных (dependency injection)
             user_service: Сервис для работы с пользователями (dependency injection)
-            
+
         Returns:
             Список пользователей
         """
@@ -77,7 +77,7 @@ class UserController(Controller):
             kwargs["email"] = email
         if description is not None:
             kwargs["description"] = description
-        
+
         users = await user_service.get_by_filter(db_session, count, page, **kwargs)
         return [UserResponse.model_validate(user) for user in users]
 
@@ -90,12 +90,12 @@ class UserController(Controller):
     ) -> UserResponse:
         """
         Создать нового пользователя
-        
+
         Args:
             data: Данные для создания пользователя
             db_session: Сессия базы данных (dependency injection)
             user_service: Сервис для работы с пользователями (dependency injection)
-            
+
         Returns:
             Созданный пользователь
         """
@@ -111,7 +111,7 @@ class UserController(Controller):
     ) -> None:
         """
         Удалить пользователя
-        
+
         Args:
             user_id: ID пользователя (UUID в формате строки)
             db_session: Сессия базы данных (dependency injection)
@@ -129,27 +129,25 @@ class UserController(Controller):
     ) -> UserResponse:
         """
         Обновить пользователя
-        
+
         Args:
             user_id: ID пользователя (UUID в формате строки)
             data: Данные для обновления пользователя
             db_session: Сессия базы данных (dependency injection)
             user_service: Сервис для работы с пользователями (dependency injection)
-            
+
         Returns:
             Обновленный пользователь
-            
+
         Raises:
             NotFoundException: Если пользователь не найден
         """
         # Конвертируем UserCreate в UserUpdate для частичного обновления
         # В требованиях указан UserCreate, но для update логичнее UserUpdate
         user_update = UserUpdate(
-            username=data.username,
-            email=data.email,
-            description=data.description
+            username=data.username, email=data.email, description=data.description
         )
-        
+
         try:
             user = await user_service.update(db_session, user_id, user_update)
             return UserResponse.model_validate(user)

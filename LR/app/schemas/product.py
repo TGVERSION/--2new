@@ -1,10 +1,12 @@
-from pydantic import BaseModel, ConfigDict
-from typing import Optional
 from datetime import datetime
+from typing import Optional
+
+from pydantic import BaseModel, ConfigDict
 
 
 class ProductCreate(BaseModel):
     """Схема для создания продукта"""
+
     name: str
     description: Optional[str] = None
     price: float
@@ -13,6 +15,7 @@ class ProductCreate(BaseModel):
 
 class ProductUpdate(BaseModel):
     """Схема для обновления продукта"""
+
     name: Optional[str] = None
     description: Optional[str] = None
     price: Optional[float] = None
@@ -21,6 +24,7 @@ class ProductUpdate(BaseModel):
 
 class ProductResponse(BaseModel):
     """Схема для ответа с данными продукта"""
+
     id: str
     name: str
     description: Optional[str] = None
@@ -30,4 +34,3 @@ class ProductResponse(BaseModel):
     updated_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
-

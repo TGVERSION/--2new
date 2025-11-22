@@ -1,0 +1,40 @@
+[BASIC]
+init-hook='import sys; sys.path.append(".")'
+max-line-length=88
+disable =
+    missing-function-docstring,
+    missing-module-docstring,
+    missing-class-docstring,
+    too-few-public-methods,
+    not-callable,
+    attribute-defined-outside-init,
+    ungrouped-imports,
+    wrong-import-order,
+    duplicate-code,
+    unused-import,
+    too-many-arguments,
+    unused-argument,
+    too-many-positional-arguments,
+    import-outside-toplevel,
+    too-many-instance-attributes,
+    wrong-import-position,
+    raise-missing-from,
+    line-too-long,
+    redefined-outer-name,
+    reimported
+
+ignore-paths =
+    deploy,
+    temp,
+    build,
+    tests,
+    migrations,
+    src/desk/repository/sqlalchemy/migration/alembic
+
+extension-pkg-whitelist=
+    pydantic,
+    orjson
+
+generated-members =
+    [pydantic.PostgresDsn.build]
+

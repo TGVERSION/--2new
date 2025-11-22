@@ -1,12 +1,13 @@
 import os
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
+
 from litestar import Litestar
 from litestar.di import Provide
 from litestar.openapi import OpenAPIConfig
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
+from app.controllers.user_controller import UserController
 from app.repositories.user_repository import UserRepository
 from app.services.user_service import UserService
-from app.controllers.user_controller import UserController
 
 # Настройка базы данных
 # Используем SQLite с aiosqlite для асинхронной работы
@@ -32,7 +33,9 @@ async def provide_db_session() -> AsyncSession:
             raise
 
 
-async def provide_user_repository(db_session: AsyncSession = Provide(provide_db_session)) -> UserRepository:
+async def provide_user_repository(
+    db_session: AsyncSession = Provide(provide_db_session),
+) -> UserRepository:
     """Провайдер репозитория пользователей"""
     # Note: UserRepository doesn't store session in constructor,
     # but we provide it here for dependency injection chain
@@ -40,7 +43,9 @@ async def provide_user_repository(db_session: AsyncSession = Provide(provide_db_
     return UserRepository()
 
 
-async def provide_user_service(user_repository: UserRepository = Provide(provide_user_repository)) -> UserService:
+async def provide_user_service(
+    user_repository: UserRepository = Provide(provide_user_repository),
+) -> UserService:
     """Провайдер сервиса пользователей"""
     return UserService(user_repository)
 
@@ -66,5 +71,5 @@ app = Litestar(
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
 
+    uvicorn.run(app, host="0.0.0.0", port=8000)

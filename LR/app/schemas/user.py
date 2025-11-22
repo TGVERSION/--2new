@@ -1,10 +1,12 @@
-from pydantic import BaseModel, EmailStr, ConfigDict
-from typing import Optional
 from datetime import datetime
+from typing import Optional
+
+from pydantic import BaseModel, ConfigDict, EmailStr
 
 
 class UserCreate(BaseModel):
     """Схема для создания пользователя"""
+
     username: str
     email: EmailStr
     description: Optional[str] = None
@@ -12,6 +14,7 @@ class UserCreate(BaseModel):
 
 class UserUpdate(BaseModel):
     """Схема для обновления пользователя"""
+
     username: Optional[str] = None
     email: Optional[EmailStr] = None
     description: Optional[str] = None
@@ -19,6 +22,7 @@ class UserUpdate(BaseModel):
 
 class UserResponse(BaseModel):
     """Схема для ответа с данными пользователя"""
+
     id: str
     username: str
     email: str
@@ -27,4 +31,3 @@ class UserResponse(BaseModel):
     updated_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
-

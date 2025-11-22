@@ -1,0 +1,13 @@
+services:
+  web:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=sqlite+aiosqlite:///./lab2.db
+    volumes:
+      - ./lab2.db:/app/lab2.db
+      - ./migrations:/app/migrations
+      - .:/app
+    command: uvicorn --reload --host 0.0.0.0 --port 8000 --log-level debug app.main:app
+
