@@ -11,39 +11,83 @@ pip install -r requirements.txt
 
 ## Запуск приложения
 
+### Важно: Запуск должен выполняться из директории LR
 
+1. Перейдите в директорию LR:
 ```bash
-cd --2new/ЛР2
-python -m app.main
+cd LR
+```
+
+2. Запустите RabbitMQ через Docker Compose:
+```bash
+docker-compose up -d rabbitmq
+```
+
+3. Запустите обработчики RabbitMQ (в отдельном терминале):
+```bash
+python run_rabbitmq.py
+```
+
+4. Запустите основное приложение Litestar (в отдельном терминале):
+```bash
+python run_app.py
+```
+
+Или используйте команды напрямую:
+```bash
+# Обработчики RabbitMQ
+python -m app.rabbitmq_handlers
+
+# Основное приложение
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+5. Запустите продюсер для отправки тестовых данных:
+```bash
+python producer.py
 ```
 
 
 ## Проверка работы
 
 После запуска приложение будет доступно по адресу:
-- http://localhost:8000/users
+- http://localhost:8000
+- RabbitMQ UI: http://localhost:15672 (логин/пароль: guest/guest)
 
 ### Доступные API endpoints:
 
-Все эндпоинты находятся по пути `/users`:
-
+#### Пользователи (`/users`):
 - **GET** `/users` - Получить список пользователей
   - Параметры запроса: `?page=1&count=10&username=...&email=...&description=...`
   
 - **GET** `/users/{user_id}` - Получить пользователя по ID
-  - Пример: `GET /users/42038a64-e04f-4ef6-8442-4d00afc969b5`
   
 - **POST** `/users` - Создать нового пользователя
   - Тело запроса: `{"username": "test", "email": "test@example.com", "description": "..."}`
   
 - **PUT** `/users/{user_id}` - Обновить пользователя
-  - Пример: `PUT /users/42038a64-e04f-4ef6-8442-4d00afc969b5`
-  - Тело запроса: `{"username": "new_name", "email": "new@example.com", "description": "..."}`
   
 - **DELETE** `/users/{user_id}` - Удалить пользователя
-  - Пример: `DELETE /users/42038a64-e04f-4ef6-8442-4d00afc969b5`
 
-Запрос к корневому пути `/` вернет 404, так как все роуты находятся под `/users`.
+#### Заказы (`/orders`):
+- **GET** `/orders` - Получить список заказов
+  - Параметры запроса: `?page=1&count=10`
+  
+- **GET** `/orders/{order_id}` - Получить заказ по ID
+
+#### Продукция (`/products`):
+- **GET** `/products` - Получить список продукции
+  - Параметры запроса: `?page=1&count=10`
+  
+- **GET** `/products/{product_id}` - Получить продукцию по ID
+
+### RabbitMQ очереди:
+
+- **order** - очередь для обработки заказов
+  - Операции: `create`, `update`
+  
+- **product** - очередь для обработки продукции
+  - Операции: `create`, `update`, `mark_out_of_stock`
 
 ## Запуск тестов
 

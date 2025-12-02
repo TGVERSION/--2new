@@ -21,7 +21,8 @@ disable =
     raise-missing-from,
     line-too-long,
     redefined-outer-name,
-    reimported
+    reimported,
+    import-error
 
 ignore-paths =
     deploy,
@@ -33,7 +34,8 @@ ignore-paths =
 
 extension-pkg-whitelist=
     pydantic,
-    orjson
+    orjson,
+    faststream
 
 generated-members =
     [pydantic.PostgresDsn.build]

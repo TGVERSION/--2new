@@ -5,8 +5,14 @@ from litestar.di import Provide
 from litestar.openapi import OpenAPIConfig
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
+from app.controllers.order_controller import OrderController
+from app.controllers.product_controller import ProductController
 from app.controllers.user_controller import UserController
+from app.repositories.order_repository import OrderRepository
+from app.repositories.product_repository import ProductRepository
 from app.repositories.user_repository import UserRepository
+from app.services.order_service import OrderService
+from app.services.product_service import ProductService
 from app.services.user_service import UserService
 
 # Настройка базы данных
@@ -50,20 +56,54 @@ async def provide_user_service(
     return UserService(user_repository)
 
 
+async def provide_order_repository(
+    db_session: AsyncSession = Provide(provide_db_session),
+) -> OrderRepository:
+    """Провайдер репозитория заказов"""
+    return OrderRepository()
+
+
+async def provide_product_repository(
+    db_session: AsyncSession = Provide(provide_db_session),
+) -> ProductRepository:
+    """Провайдер репозитория продукции"""
+    return ProductRepository()
+
+
+async def provide_order_service(
+    order_repository: OrderRepository = Provide(provide_order_repository),
+    product_repository: ProductRepository = Provide(provide_product_repository),
+    user_repository: UserRepository = Provide(provide_user_repository),
+) -> OrderService:
+    """Провайдер сервиса заказов"""
+    return OrderService(order_repository, product_repository, user_repository)
+
+
+async def provide_product_service(
+    product_repository: ProductRepository = Provide(provide_product_repository),
+) -> ProductService:
+    """Провайдер сервиса продукции"""
+    return ProductService(product_repository)
+
+
 # Конфигурация OpenAPI для генерации схемы API
 openapi_config = OpenAPIConfig(
-    title="User Management API",
+    title="Order and Product Management API",
     version="1.0.0",
-    description="API для управления пользователями",
+    description="API для управления пользователями, заказами и продукцией",
 )
 
 
 app = Litestar(
-    route_handlers=[UserController],
+    route_handlers=[UserController, OrderController, ProductController],
     dependencies={
         "db_session": Provide(provide_db_session),
         "user_repository": Provide(provide_user_repository),
         "user_service": Provide(provide_user_service),
+        "order_repository": Provide(provide_order_repository),
+        "product_repository": Provide(provide_product_repository),
+        "order_service": Provide(provide_order_service),
+        "product_service": Provide(provide_product_service),
     },
     openapi_config=openapi_config,
 )
