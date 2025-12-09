@@ -12,6 +12,7 @@ services:
     command: uvicorn --reload --host 0.0.0.0 --port 8000 --log-level debug app.main:app
     depends_on:
       - rabbitmq
+      - redis
 
   rabbitmq:
     image: rabbitmq:3-management
@@ -23,6 +24,15 @@ services:
     volumes:
       - rabbitmq_data:/data
 
+  redis:
+    image: redis:latest
+    container_name: redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+
 volumes:
   rabbitmq_data:
+  redis-data:
 

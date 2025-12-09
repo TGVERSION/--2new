@@ -1,5 +1,3 @@
-"""Обработчики сообщений RabbitMQ для заказов и продукции"""
-
 import sys
 from pathlib import Path
 
@@ -15,6 +13,7 @@ sys.path.insert(0, str(project_root))
 # Настройка базы данных
 import os
 
+from app.cache import CacheService, create_redis_client
 from app.repositories.order_repository import OrderRepository
 from app.repositories.product_repository import ProductRepository
 from app.repositories.user_repository import UserRepository
@@ -39,7 +38,23 @@ order_repository = OrderRepository()
 product_repository = ProductRepository()
 user_repository = UserRepository()
 order_service = OrderService(order_repository, product_repository, user_repository)
-product_service = ProductService(product_repository)
+
+# Инициализация кэш-сервиса и product_service
+# Создаем их асинхронно при первом использовании
+_redis_client = None
+_cache_service = None
+_product_service = None
+
+
+async def get_product_service() -> ProductService:
+    """Получить экземпляр ProductService (ленивая инициализация)"""
+    global _redis_client, _cache_service, _product_service  # pylint: disable=global-statement
+    if _product_service is None:
+        if _cache_service is None:
+            _redis_client = await create_redis_client()
+            _cache_service = CacheService(_redis_client)
+        _product_service = ProductService(product_repository, _cache_service)
+    return _product_service
 
 
 @broker.subscriber("order")
@@ -119,6 +134,8 @@ async def subscribe_order(message: dict):
 
 @broker.subscriber("product")
 async def subscribe_product(message: dict):
+    # Получаем product_service с инициализированным cache_service
+    product_service = await get_product_service()
 
     async with async_session_factory() as session:
         try:

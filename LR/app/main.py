@@ -5,6 +5,7 @@ from litestar.di import Provide
 from litestar.openapi import OpenAPIConfig
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
+from app.cache import CacheService, create_redis_client
 from app.controllers.order_controller import OrderController
 from app.controllers.product_controller import ProductController
 from app.controllers.user_controller import UserController
@@ -39,6 +40,49 @@ async def provide_db_session() -> AsyncSession:
             raise
 
 
+# Глобальный клиент Redis (singleton pattern)
+_redis_client_instance = None  # pylint: disable=global-statement
+
+
+async def provide_redis_client():
+    """Провайдер клиента Redis (singleton)"""
+    global _redis_client_instance  # pylint: disable=global-statement
+    if _redis_client_instance is None:
+        try:
+            import asyncio
+
+            _redis_client_instance = await asyncio.wait_for(
+                create_redis_client(), timeout=2.0
+            )
+        except asyncio.TimeoutError:
+            print(
+                "WARNING: Таймаут при подключении к Redis. Кэширование будет отключено."
+            )
+            # Создаем фиктивный клиент
+            import redis.asyncio as redis_module
+
+            _redis_client_instance = redis_module.Redis(
+                host="nonexistent", port=6379, db=0, decode_responses=False
+            )
+        except (redis_module.RedisError, ConnectionError, OSError) as e:
+            print(
+                f"WARNING: Ошибка при подключении к Redis: {e}. Кэширование будет отключено."
+            )
+            # Создаем фиктивный клиент
+            import redis.asyncio as redis_module
+
+            _redis_client_instance = redis_module.Redis(
+                host="nonexistent", port=6379, db=0, decode_responses=False
+            )
+    return _redis_client_instance
+
+
+async def provide_cache_service() -> CacheService:
+    """Провайдер сервиса кэша"""
+    redis_client = await provide_redis_client()
+    return CacheService(redis_client)
+
+
 async def provide_user_repository(
     db_session: AsyncSession = Provide(provide_db_session),
 ) -> UserRepository:
@@ -51,9 +95,10 @@ async def provide_user_repository(
 
 async def provide_user_service(
     user_repository: UserRepository = Provide(provide_user_repository),
+    cache_service: CacheService = Provide(provide_cache_service),
 ) -> UserService:
     """Провайдер сервиса пользователей"""
-    return UserService(user_repository)
+    return UserService(user_repository, cache_service)
 
 
 async def provide_order_repository(
@@ -81,9 +126,10 @@ async def provide_order_service(
 
 async def provide_product_service(
     product_repository: ProductRepository = Provide(provide_product_repository),
+    cache_service: CacheService = Provide(provide_cache_service),
 ) -> ProductService:
     """Провайдер сервиса продукции"""
-    return ProductService(product_repository)
+    return ProductService(product_repository, cache_service)
 
 
 # Конфигурация OpenAPI для генерации схемы API
@@ -104,6 +150,8 @@ app = Litestar(
         "product_repository": Provide(provide_product_repository),
         "order_service": Provide(provide_order_service),
         "product_service": Provide(provide_product_service),
+        "redis_client": Provide(provide_redis_client),
+        "cache_service": Provide(provide_cache_service),
     },
     openapi_config=openapi_config,
 )

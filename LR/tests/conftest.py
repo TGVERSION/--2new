@@ -107,3 +107,53 @@ def client():
     from app.main import app
     return TestClient(app=app)
 
+
+@pytest.fixture
+def mock_cache_service():
+    """Фикстура для мока CacheService"""
+    from unittest.mock import AsyncMock, MagicMock
+    from app.cache import CacheService
+    
+    mock_redis = AsyncMock()
+    cache_service = CacheService(mock_redis)
+    
+    # Мокаем методы кэша для проверки вызовов
+    cache_service.set_model = AsyncMock(return_value=True)
+    cache_service.delete = AsyncMock(return_value=True)
+    cache_service.get_model = AsyncMock(return_value=None)
+    
+    return cache_service
+
+
+@pytest.fixture
+async def redis_client():
+    """Фикстура для реального Redis клиента (опционально)"""
+    try:
+        import redis.asyncio as redis_module
+        client = redis_module.Redis(
+            host="localhost",
+            port=6379,
+            db=15,  # Используем отдельную БД для тестов
+            decode_responses=False,
+            socket_connect_timeout=1,
+            socket_timeout=1
+        )
+        await client.ping()
+        yield client
+        # Очищаем тестовую БД после тестов
+        await client.flushdb()
+        await client.aclose()
+    except Exception:
+        # Если Redis недоступен, возвращаем None
+        yield None
+
+
+@pytest.fixture
+async def real_cache_service(redis_client):
+    """Фикстура для реального CacheService (если Redis доступен)"""
+    if redis_client is None:
+        pytest.skip("Redis недоступен, пропускаем тесты с реальным кэшем")
+    
+    from app.cache import CacheService
+    return CacheService(redis_client)
+

@@ -91,7 +91,13 @@ python producer.py
 
 ## Запуск тестов
 
-Для запуска тестов используйте одну из следующих команд:
+### Подготовка
+
+Перед запуском тестов убедитесь, что Redis запущен:
+
+```bash
+docker-compose up -d redis
+```
 
 ### Все тесты
 ```bash
@@ -108,6 +114,15 @@ python -m pytest tests/test_models/ tests/test_repositories/ tests/test_services
 python -m pytest tests/test_routes/
 ```
 
+### Тесты кэширования
+```bash
+# Все тесты кэширования (требуется Redis)
+python -m pytest tests/test_cache.py tests/test_cache_integration.py -v
+
+# Только unit-тесты кэширования (без Redis)
+python -m pytest tests/test_cache.py::TestCacheService -v
+```
+
 ### С покрытием кода
 ```bash
 python -m pytest --cov=app --cov-report=html
@@ -118,5 +133,3 @@ python -m pytest --cov=app --cov-report=html
 python -m pip install --force-reinstall pytest-xdist
 python -m pytest -n auto
 ```
-
-**Примечание:** На Windows можно использовать `pytest.bat` вместо `python -m pytest`, если файл находится в текущей директории или добавлен в PATH.

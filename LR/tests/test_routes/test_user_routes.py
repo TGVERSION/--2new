@@ -22,9 +22,9 @@ class UserResponseFactory(ModelFactory[UserResponse]):
 
 
 @pytest.fixture
-def user_service():
+def user_service(mock_cache_service):
     """Фикстура для UserService"""
-    return UserService(user_repository=UserRepository())
+    return UserService(user_repository=UserRepository(), cache_service=mock_cache_service)
 
 
 @pytest.fixture
